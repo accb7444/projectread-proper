@@ -1,4 +1,4 @@
-# LN Reader Pro
+# LN Reader
 
 A distraction-free, full-screen reader for web articles and long-form content — built with vanilla HTML/CSS/JS (no frameworks). Features real-time theme switching, adjustable typography, reading history, and a glassmorphism settings panel.
 
