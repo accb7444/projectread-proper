@@ -25,23 +25,22 @@ A distraction-free, full-screen reader for web articles and long-form content �
 3. No build step, no dependencies, no server needed — just a static file
 
 ```bash
-git clone https://github.com/accb7444/projectread-claude.git
-cd projectread-claude
+git clone https://github.com/accb7444/projectread-proper.git
+cd projectread-proper
 open projectread.html   # or double-click it
 ```
 
 ## 📁 Project structure
 
 ```
-projectread-claude/
+projectread-proper/
 ├── projectread.html      # Main reader — all logic, styles, and UI in one file
-├── claude.html           # Claude variant / alternate view
-├── claudevwer.html       # Claude viewer — read-only view variant
 ├── .github/
 │   └── assets/
 │       └── screenshot-reader.png   # Repo screenshot (add your own!)
 ├── LICENSE               # MIT — free to use and modify
-├── .gitignore            # Ignores IDE files, OS junk, logs, temp files
+├── .gitignore            # Ignores IDE files, OS junk, logs, temp files, secrets
+├── open.sh               # Helper script to open projectread.html in your browser
 └── README.md             # This file
 ```
 
@@ -68,8 +67,6 @@ Dark mode overrides the same tokens inside `@media (prefers-color-scheme: dark)`
 | File | Purpose |
 |------|---------|
 | `projectread.html` | Full reader — reader view, history sidebar, settings panel, search. The main artifact. |
-| `claude.html` | Claude variant — alternate layout / view of the same reader concept. |
-| `claudevwer.html` | Claude viewer — a more minimal, read-only variant. |
 
 ## 🔧 Tech stack
 
@@ -84,6 +81,6 @@ MIT — see [LICENSE](./LICENSE). Use it, modify it, share it.
 ---
 
 <p align="center">
-  <a href="https://github.com/accb7444/projectread-claude">GitHub</a> ·
+  <a href="https://github.com/accb7444/projectread-proper">GitHub</a> ·
   Built with ❤️ and vanilla web tech
 </p>
