@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LN Reader Pro</title>
+    <style>
+        :root {
+            --bg: #fafafa;
+            --text: #222;
+            --accent: #4a90e2;
+            --border: rgba(0,0,0,0.1);
+            --card: #ffffff;
+            --sidebar-bg: rgba(248, 248, 248, 0.95);
+            --ui-opacity: 1;
+            --font-main: "Inter", system-ui, -apple-system, sans-serif;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #111;
+                --text: #eee;
+                --accent: #5da9ff;
+                --border: rgba(255,255,255,0.1);
+                --card: #1a1a1a;
+                --sidebar-bg: rgba(24, 24, 24, 0.95);
+            }
+        }
+
+        body {
+            font-family: var(--font-main);
+            font-size: 19px;
+            line-height: 1.7;
+            margin: 0;
+            padding: 0;
+            color: var(--text);
+            background-color: var(--bg);
+            letter-spacing: 0.015em;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Layar Setup / Upload */
+        .setup-screen {
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            transition: opacity 0.5s ease;
+        }
+
+        .setup-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Sidebar - Glassmorphism */
+        #sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 320px;
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-right: 1px solid var(--border);
+            transform: translateX(-100%);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 20px 0 50px rgba(0,0,0,0.15);
+        }
+
+        #sidebar.open { transform: translateX(0); }
+
+        .sidebar-header {
+            padding: 30px 25px 20px 25px;
+            font-weight: 800;
+            font-size: 1.2rem;
+            letter-spacing: -0.02em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sidebar-header span { color: var(--accent); }
+
+        #toc {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 0 40px 0;
+        }
+
+        .toc-item {
+            padding: 12px 25px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            opacity: 0.6;
+            position: relative;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            line-height: 1.4;
+        }
+
+        .toc-item:hover { opacity: 1; background: rgba(128,128,128,0.05); }
+
+        .toc-item.active {
+            opacity: 1;
+            color: var(--accent);
+            font-weight: 600;
+            background: rgba(74, 144, 226, 0.08);
+        }
+
+        .toc-item.active::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--accent);
+        }
+
+        /* Area Baca */
+        #viewport {
+            flex: 1;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+            position: relative;
+        }
+
+        #reader-content {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 100px 24px 200px 24px;
+        }
+
+        /* Progress bar */
+        #progress-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: rgba(0,0,0,0.05);
+            z-index: 2100;
+        }
+
+        #progress-bar {
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+
+        /* Floating UI Controls */
+        .ui-element {
+            position: fixed;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+            opacity: var(--ui-opacity);
+            z-index: 1500;
+        }
+
+        .ui-hidden {
+            opacity: 0 !important;
+            pointer-events: none;
+            transform: translateY(15px);
+        }
+
+        .controls-bottom {
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            background: var(--card);
+            color: var(--text);
+            padding: 12px 24px;
+            border: 1px solid var(--border);
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover { border-color: var(--accent); transform: translateY(-2px); }
+
+        /* Typography */
+        h2 { 
+            margin-top: 4em; 
+            line-height: 1.2; 
+            font-weight: 900; 
+            font-size: 1.8rem; 
+            color: var(--accent); 
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        p { margin-bottom: 1.3em; hyphens: auto; text-align: justify; }
+        p + p { text-indent: 1.5em; margin-top: -0.7em; }
+        p:first-of-type, h2 + p, h3 + p, li > p { text-indent: 0; }
+
+        .overlay-mask {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.3);
+            display: none;
+            z-index: 1999;
+            backdrop-filter: blur(2px);
+        }
+
+        .overlay-mask.active { display: block; }
+        .hidden { display: none !important; }
+        .icon { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+        @media (max-width: 768px) {
+            #reader-content { padding-top: 60px; }
+            h2 { font-size: 1.5rem; margin-top: 2em; }
+            body { font-size: 17px; }
+        }
+    </style>
+</head>
+<body onmousemove="handleInteractivity()" onclick="handleInteractivity()" ontouchstart="handleInteractivity()">
+
+    <!-- Layar Awal -->
+    <div id="setup" class="setup-screen">
+        <div style="max-width: 400px; width: 90%; text-align: center;">
+            <div style="font-size: 4rem; margin-bottom: 10px;">📖</div>
+            <h1 style="border:none; margin:0 0 10px 0; font-size: 2.5rem; font-weight: 900; letter-spacing: -1px;">LN Reader</h1>
+            <p style="opacity: 0.6; margin-bottom: 30px;">Unggah novel <b>.txt</b> atau <b>.md</b> Anda.</p>
+            <input type="file" id="fileInput" accept=".txt,.md" class="hidden">
+            <button class="btn" onclick="document.getElementById('fileInput').click()" style="width: 100%; padding: 20px; justify-content: center; background: var(--accent); color: white; border: none; font-size: 1rem;">
+                Pilih Berkas
+            </button>
+        </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div id="progress-container"><div id="progress-bar"></div></div>
+    
+    <!-- Masker untuk Sidebar -->
+    <div id="mask" class="overlay-mask" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar / Daftar Isi -->
+    <aside id="sidebar">
+        <div class="sidebar-header">
+            <span>Daftar Isi</span>
+            <div style="cursor:pointer; opacity:0.5" onclick="toggleSidebar()">✕</div>
+        </div>
+        <div id="toc"></div>
+    </aside>
+
+    <!-- Kontainer Pembaca -->
+    <main id="viewport">
+        <article id="reader-content"></article>
+    </main>
+
+    <!-- Kontrol Melayang -->
+    <div id="ui-controls" class="ui-element controls-bottom ui-hidden">
+        <button class="btn" onclick="toggleSidebar()">
+            <svg class="icon" viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            Menu
+        </button>
+        <button class="btn" onclick="scrollToTop()">
+            <svg class="icon" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"></polyline></svg>
+            Atas
+        </button>
+    </div>
+
+    <script>
+        /**
+         * State Management
+         */
+        let novelState = { chapters: [], fileId: "", activeChapter: 0 };
+        let uiTimer;
+        
+        const viewport = document.getElementById('viewport');
+        const readerContent = document.getElementById('reader-content');
+        const tocContainer = document.getElementById('toc');
+        const progressBar = document.getElementById('progress-bar');
+        const setupScreen = document.getElementById('setup');
+        const sidebar = document.getElementById('sidebar');
+        const uiControls = document.getElementById('ui-controls');
+        const mask = document.getElementById('mask');
+
+        /**
+         * File Upload Handling
+         */
+        document.getElementById('fileInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            novelState.fileId = btoa(file.name);
+            const text = await file.text();
+            
+            setupScreen.classList.add('hidden');
+            parseBook(text);
+        });
+
+        /**
+         * Book Parsing Logic
+         * Mendeteksi bab berdasarkan pola umum novel digital
+         */
+        function parseBook(text) {
+            const lines = text.split(/\r?\n/);
+            const rawChapters = [];
+            let currentChapter = { title: "Halaman Judul", content: [] };
+
+            const chapterMarkers = [
+                /^#+\s+(.+)$/i,
+                /^(PROLOGUE|AFTERWORD|EPILOGUE|INTERLUDE|INTERMISSION|CHARACTER|APPENDIX|CONTENTS|STORY|PROLOG|PENUTUP|DAFTAR ISI|KARAKTER)\b/i,
+                /^(CHAPTER|PART|VOLUME|BAB|BAGIAN)\s+([0-9IVXLC-]+|ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE|TEN|SATU|DUA|TIGA|EMPAT|LIMA)\b.*$/i,
+                /^(CHAPTER|PART|VOLUME|BAB)\s*:\s*(.+)$/i
+            ];
+
+            const pageMarkerRegex = /^--- PAGE \d+ ---$/;
+            const cleanText = (s) => s.replace(/\s+/g, " ").trim();
+
+            const flushCurrent = () => {
+                if (currentChapter && (currentChapter.title || currentChapter.content.length)) {
+                    rawChapters.push(currentChapter);
+                }
+            };
+
+            lines.forEach(line => {
+                const trimmed = line.trim();
+                if (!trimmed || pageMarkerRegex.test(trimmed)) return;
+
+                const isChapterHeading = chapterMarkers.some(rx => rx.test(trimmed) && trimmed.length < 120);
+
+                if (isChapterHeading) {
+                    flushCurrent();
+                    currentChapter = {
+                        title: trimmed.replace(/^#+\s+/, "").trim(),
+                        content: []
+                    };
+                } else {
+                    currentChapter.content.push(trimmed);
+                }
+            });
+
+            flushCurrent();
+
+            // Deteksi cluster TOC untuk membersihkan navigasi
+            const bodyLength = (ch) => cleanText(ch.content.join(" ")).length;
+            const isHeadingOnlyBlock = (ch) => {
+                const title = cleanText(ch.title);
+                const body = bodyLength(ch);
+                return (chapterMarkers.some(rx => rx.test(title)) || /judul/i.test(title)) && body < 150;
+            };
+
+            const finalChapters = [];
+            let i = 0;
+            while (i < rawChapters.length) {
+                let j = i;
+                while (j < rawChapters.length && isHeadingOnlyBlock(rawChapters[j])) j++;
+
+                const runLength = j - i;
+                if (runLength >= 3) {
+                    finalChapters.push({
+                        title: "Daftar Isi",
+                        type: "toc",
+                        content: rawChapters.slice(i, j).map(ch => ch.title)
+                    });
+                    i = j;
+                    continue;
+                }
+
+                const ch = rawChapters[i];
+                finalChapters.push({
+                    ...ch,
+                    type: (i === 0 && /judul/i.test(ch.title)) ? "title" : "chapter"
+                });
+                i++;
+            }
+
+            novelState.chapters = finalChapters;
+            renderBook();
+            restoreScroll();
+        }
+
+        /**
+         * Rendering Logic
+         */
+        function renderBook() {
+            readerContent.innerHTML = "";
+            tocContainer.innerHTML = "";
+
+            let navIndex = 0;
+
+            novelState.chapters.forEach((ch, idx) => {
+                // Sidebar Item
+                if (ch.type !== "toc" && ch.type !== "title") {
+                    const tocItem = document.createElement("div");
+                    tocItem.className = "toc-item";
+                    tocItem.id = `toc-item-${idx}`;
+                    tocItem.innerHTML = `
+                        <span style="opacity:0.3; width:20px; flex-shrink:0">${++navIndex}</span>
+                        <span>${ch.title}</span>
+                    `;
+                    tocItem.onclick = () => {
+                        jumpTo(idx);
+                        if (window.innerWidth < 1000) toggleSidebar();
+                    };
+                    tocContainer.appendChild(tocItem);
+                }
+
+                // Section Content
+                const section = document.createElement("section");
+                section.id = `ch-${idx}`;
+                section.dataset.index = idx;
+
+                const header = document.createElement("h2");
+                header.innerText = ch.title;
+                section.appendChild(header);
+
+                if (ch.type === "toc") {
+                    ch.content.forEach(line => {
+                        const p = document.createElement("p");
+                        p.innerText = line;
+                        section.appendChild(p);
+                    });
+                } else {
+                    ch.content.forEach(pText => {
+                        const html = mdToHtml(pText);
+                        const wrapper = document.createElement("div");
+                        wrapper.innerHTML = html;
+                        while (wrapper.firstChild) section.appendChild(wrapper.firstChild);
+                    });
+                }
+
+                readerContent.appendChild(section);
+            });
+
+            // Intersection Observer untuk update active TOC saat scroll
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        novelState.activeChapter = entry.target.dataset.index;
+                        updateActiveToc();
+                    }
+                });
+            }, { threshold: 0.1, rootMargin: "-10% 0px -80% 0px" });
+
+            document.querySelectorAll("section").forEach(s => observer.observe(s));
+        }
+
+        function updateActiveToc() {
+            document.querySelectorAll('.toc-item').forEach(item => item.classList.remove('active'));
+            const current = document.getElementById(`toc-item-${novelState.activeChapter}`);
+            if (current) {
+                current.classList.add('active');
+                current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        /**
+         * Markdown Helper
+         */
+        function mdToHtml(text) {
+            let processed = escapeHTML(text);
+            processed = processed.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            processed = processed.replace(/__(.*?)__/g, '<strong>$1</strong>');
+            processed = processed.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            processed = processed.replace(/_(.*?)_/g, '<em>$1</em>');
+            
+            if (text.trim().startsWith('- ') || text.trim().startsWith('* ')) {
+                return `<ul><li>${processed.substring(2)}</li></ul>`;
+            }
+            return `<p>${processed}</p>`;
+        }
+
+        /**
+         * Scroll & Persistence
+         */
+        viewport.addEventListener('scroll', () => {
+            const pos = viewport.scrollTop;
+            const max = viewport.scrollHeight - viewport.clientHeight;
+            progressBar.style.width = `${(pos / (max || 1)) * 100}%`;
+            if (novelState.fileId) localStorage.setItem(`pos_${novelState.fileId}`, pos);
+        });
+
+        function restoreScroll() {
+            const saved = localStorage.getItem(`pos_${novelState.fileId}`);
+            if (saved) setTimeout(() => viewport.scrollTop = parseInt(saved), 100);
+        }
+
+        function jumpTo(idx) {
+            const el = document.getElementById(`ch-${idx}`);
+            if (el) el.scrollIntoView({ behavior: 'auto' });
+        }
+
+        /**
+         * UI Interactions
+         */
+        function toggleSidebar() {
+            sidebar.classList.toggle('open');
+            mask.classList.toggle('active');
+        }
+
+        function scrollToTop() {
+            viewport.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function handleInteractivity() {
+            uiControls.classList.remove('ui-hidden');
+            clearTimeout(uiTimer);
+            uiTimer = setTimeout(() => {
+                if (!sidebar.classList.contains('open') && viewport.scrollTop > 200) {
+                    uiControls.classList.add('ui-hidden');
+                }
+            }, 3000);
+        }
+
+        function escapeHTML(str) {
+            const d = document.createElement('div');
+            d.textContent = str;
+            return d.innerHTML;
+        }
+
+        // Jalankan timer awal untuk menyembunyikan UI
+        handleInteractivity();
+    </script>
+</body>
+</html>

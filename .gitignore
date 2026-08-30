@@ -1,0 +1,40 @@
+# Default ignored files
+/workspace
+/.env
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs & temp
+*.log
+*.tmp
+*.bak
+*.orig
+
+# Build / generated
+dist/
+build/
+coverage/
+*.pyc
+__pycache__/
+node_modules/
+
+# Secrets (never commit these)
+.env.local
+*.key
+*.pem
+secrets.json
+
+# Scrap / scratch
+scratch/
+drafts/
+tmp/
